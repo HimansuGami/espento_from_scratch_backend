@@ -8,7 +8,7 @@ import { AdminModule } from './Modules/Admin/admin.module';
 import { DatabaseModule } from './Modules/Mongoose_Database/database.module';
 import { TransactionModule } from './Modules/Transaction/transaction.module';
 import { AnalyticsModule } from './Modules/Analytics/analytics.module';
-import { AffiliateTreeService } from './Services/tree.services copy';
+import { AffiliateTreeService } from './Services/tree.services';
 
 @Module({
   imports: [

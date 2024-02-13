@@ -1,7 +1,7 @@
 import { Controller, Get, Param } from '@nestjs/common';
 import { AppService } from './app.service';
 import { ApiTags } from '@nestjs/swagger';
-import { AffiliateTreeService } from './Services/tree.services copy';
+import { AffiliateTreeService } from './Services/tree.services';
 
 @Controller()
 @ApiTags('App')

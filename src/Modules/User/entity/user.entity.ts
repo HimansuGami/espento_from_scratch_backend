@@ -45,10 +45,9 @@ export const UserSchema = new Schema<IUser>(
     parent: { type: Schema.Types.ObjectId, ref: 'users' },
     parentAddress: { type: String, index: true },
     refAddress: { type: String, index: true },
-    approvedClaimAmount: { type: Number, default: 0, min: 0 },
     newVolume: { type: Number, default: 0, min: 0 },
     nodeVolume: { type: Number, default: 0, min: 0 },
-    achievedVolume: { type: Number, default: ACHIEVEDVOLUME.BRONZE },
+
     levelIncome: {
       totalClaimed: { type: Number, default: 0, min: 0 },
       active: { type: Number, default: 0, min: 0 },
@@ -77,10 +76,11 @@ export const UserSchema = new Schema<IUser>(
       activeMember: { type: Number, default: 0, min: 0 },
       totalMember: { type: Number, default: 0, min: 0 },
     },
-    affiliateIncome: {
+    degignationIncome: {
       active: { type: Number, default: 0, min: 0 },
       totalClaimed: { type: Number, default: 0, min: 0 },
       lastClaimedAt: { type: Schema.Types.Date, default: undefined },
+      achievedVolume: { type: Number, default: ACHIEVEDVOLUME.BRONZE },
     },
     capingLimit: {
       used: { type: Number, default: 0, min: 0 },

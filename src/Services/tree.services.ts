@@ -1,69 +1,56 @@
-// import { Injectable } from '@nestjs/common';
-// import { UserNode } from '../Services/user.node.model';
-// import { UserService } from 'src/Modules/User/user.service';
+// affiliate-tree.service.ts
+import { Injectable } from '@nestjs/common';
+import { UserNode } from './user.node.model';
+import { UserService } from 'src/Modules/User/user.service';
+import { IUser } from 'src/Modules/User/Interfaces/Iuser';
 
-// @Injectable()
-// export class AffiliateTreeService {
-//   private root: UserNode;
+@Injectable()
+export class AffiliateTreeService {
+  private root: UserNode;
 
-//   constructor(private readonly _userService: UserService) {
-//     this.root = new UserNode('userA'); // Assuming 'root' is the root user
-//     console.log('TS Contructor initialised');
-//   }
+  constructor(private readonly _userService: UserService) {
+    this.root = new UserNode(
+      '0x0000000000000000000000000000000000000000',
+      _userService,
+    );
+  }
 
-//   addUser(
-//     parentUserId: string,
-//     userId: string,
-//     amount: number,
-//     level: number,
-//   ): void {
-//     const parentNode = this.findNode(this.root, parentUserId);
-//     console.log('PARENT NODE 21-TS', parentNode.userId);
+  async addUser(
+    parentUserId: string,
+    userId: string,
+    amount: number,
+    level: number,
+  ): Promise<void> {
+    try {
+      const parentNode = await this.findNode(this.root, parentUserId);
+      if (parentNode instanceof UserNode) {
+        const newUser = new UserNode(userId, this._userService);
+        await parentNode.addChild(newUser, amount);
+      } else {
+        throw new Error('Parent user not found');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      // Handle the error appropriately
+    }
+  }
 
-//     if (parentNode) {
-//       const newUser = new UserNode(userId);
-//       console.log('NEW USER 25-TS', newUser);
+  private async findNode(
+    rootNode: UserNode | null,
+    userId: string,
+  ): Promise<UserNode | null | IUser> {
+    try {
+      if (rootNode.userId === userId) return rootNode;
 
-//       //parentNode.calculateReward(amount, level);
-//       parentNode.addChild(newUser, amount);
+      await this._userService.findOneUserAsync(userId);
+      return new UserNode(userId, this._userService);
+    } catch (error) {
+      console.error('Error while finding parent user:', error);
+      return null;
+    }
+  }
 
-//       // addded code
-//       //await newUser.createNew();
-//     } else {
-//       throw new Error('Parent user not found');
-//     }
-//   }
-
-//   private findNode(rootNode: UserNode | null, userId: string): UserNode | null {
-//     console.log('ROOT NODE 58', rootNode);
-
-//     if (!rootNode) {
-//       return null;
-//     }
-
-//     let stack: UserNode[] = [rootNode];
-
-//     while (stack.length > 0) {
-//       const current = stack.pop();
-
-//       if (current?.userId === userId) {
-//         return current;
-//       }
-
-//       if (current?.children && current.children.length > 0) {
-//         stack = stack.concat(current.children);
-//       }
-//     }
-
-//     // const parentUser = await this._userService.find({
-//     //   address: RegExp(rootNode.userId),
-//     // });
-//     // console.log('PARENT OF ADDED USER', parentUser);
-
-//     return null;
-//   }
-
-//   getAffiliateTree(): UserNode {
-//     return this.root;
-//   }
-// }
+  getAffiliateTree(): UserNode {
+    return this.root;
+  }
+}

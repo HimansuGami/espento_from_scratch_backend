@@ -1,98 +1,81 @@
-import { Document } from 'mongoose';
 import { IUser } from 'src/Modules/User/Interfaces/Iuser';
 import { UserService } from 'src/Modules/User/user.service';
 
 // user-node.model.ts
 export class UserNode {
   userId: string;
-  children: UserNode[];
-  totalReward: number;
-  directReward: number;
-  levelReward: number;
-  parents: UserNode[];
-  currentuserLevel: number;
-  currentuserChildNumber: number = 0;
-  parentUserLevel: number;
-
   constructor(
     userId: string,
-    private readonly _userService?: UserService,
+    private readonly _userService: UserService,
   ) {
     this.userId = userId;
-    this.children = [];
-    this.totalReward = 0;
-    this.directReward = 0;
-    this.levelReward = 0;
-    this.currentuserLevel = 1;
-    this.parentUserLevel = 0;
-    this.parents = [];
-    console.log('UNM Contructor initialised');
   }
 
-  addChild(child: UserNode, amount: number): void {
-    this.children.push(child);
-    // console.log(
-    //   'PARENTS CHILDREN UNM',
-    //   this.children,
-    //   'Of user : ',
-    //   this.userId,
-    // );
+  async addChild(child: UserNode, amount: number): Promise<IUser> {
+    const addedUser = await this.createNew(child, amount);
 
-    //console.log('THIS', this, 'AND THIS.PARENTS : ', this.parents);
-
-    //this.createNew(child.userId);
-    // Set child's parent user level and current user level
-    child.parentUserLevel = this.currentuserLevel;
-    child.currentuserLevel = this.currentuserLevel + 1;
-
-    // Increment the child number of the parent
-    child.currentuserChildNumber = this.children.length;
-
-    child.parents = [...this.parents, this];
-
-    // Apply calculateReward for each parent in allParents
-    child.getAllParents().forEach((parent) => {
-      //console.log('PARENT FROM LOOP', parent);
-
-      parent.calculateReward(
-        amount,
-        child.currentuserLevel - parent.currentuserLevel,
-        parent.userId,
-      );
+    //get all parents for this particular user from the database
+    const currentChild = await this._userService.findOneAsync({
+      address: RegExp(child.userId, 'i'),
     });
+    //console.log('ALL CHILD for this particular child', currentChild.children);
 
-    const allParents = child.getAllParents();
-    // console.log('All Parents:', allParents);
+    for (const parent of currentChild.allParents) {
+      try {
+        const parentRecord = await this._userService.findOneAsync({
+          address: new RegExp(parent.address, 'i'),
+        });
+
+        this.calculateReward(
+          amount,
+          parent.levelFromCurrentChild,
+          parent.address,
+          parentRecord,
+        );
+      } catch (error) {
+        console.error(
+          `Error fetching record for address ${parent.address}: ${error.message}`,
+        );
+      }
+    }
+    return addedUser;
   }
 
-  calculateReward(amount: number, level: number, userId: string): void {
-    //console.log('LEVEL', level);
-
+  async calculateReward(
+    amount: number,
+    level: number,
+    userId: string,
+    parentRecord: IUser,
+  ): Promise<void> {
     // -----------------------   Level-wise reward calculation
     const levelRewardPercentage = this.getLevelRewardPercentage(level);
-    //console.log('LEVEL REWARD PERCENTAGE', levelRewardPercentage);
-    const levelReward = amount * (levelRewardPercentage / 100);
-
-    this.levelReward += levelReward;
-    //console.log('LEVEL REWARD', this.levelReward);
+    let levelReward = amount * (levelRewardPercentage / 100);
 
     //------------------------ Direct reward calculation
+    let directReward = 0;
     if (level === 1) {
       const directRewardPercentage = this.getDirectRewardPercentage(level);
-      const directReward = amount * (directRewardPercentage / 100);
-      this.directReward += directReward;
-      console.log('DIRECT REWARD', this.directReward);
+      directReward = amount * (directRewardPercentage / 100);
     }
 
     // Total reward calculation
-    this.totalReward = this.levelReward + this.directReward;
-    console.log(
-      'TOTAL REWARD FOR LEVEL : ',
-      level,
-      ' is : ',
-      this.totalReward,
-      'for user : ',
-      userId,
+    parentRecord.approvedClaimAmount = levelReward + directReward;
+
+    await this._userService.findOneAndUpdate(
+      { address: new RegExp(parentRecord.address, 'i') },
+      {
+        $inc: {
+          'directIncome.active': directReward,
+          'levelIncome.totalClaimed': levelReward,
+          approvedClaimAmount: directReward + levelReward,
+          'capingLimit.remainingLimit': -levelReward,
+          'capingLimit.used': +levelReward,
+        },
+      },
+      {
+        new: true,
+        rawResult: true,
+      },
     );
   }
 
@@ -107,61 +90,127 @@ export class UserNode {
     return level === 1 ? 5 : 0; // 5% direct reward if there are direct children, otherwise 0
   }
 
-  getAllParents(parents: UserNode[] = []): UserNode[] {
-    return [...parents, ...this.parents];
-  }
-
-  toJSON(): object {
-    return {
-      userId: this.userId,
-      children: this.children.map((child) => child.toJSON()), // recursively call toJSON for children
-      totalReward: this.totalReward,
-      directReward: this.directReward,
-      levelReward: this.levelReward,
-      currentuserLevel: this.currentuserLevel,
-      currentuserChildNumber: this.currentuserChildNumber,
-      parentUserLevel: this.parentUserLevel,
-    };
-  }
-
   //added code
 
-  async createNew(userId: string): Promise<void> {
-    //console.log('USER ID ', userId);
-
+  async createNew(child, amount): Promise<IUser> {
     try {
-      const user = this._userService.createNew(userId);
-      //console.log('RETUREN STORED USER ', user);
+      const parentUser = await this.getParent(this.userId);
+      //console.log('Parent user :::::::::::::', parentUser);
 
-      // Log the rewards
-      //this.logRewards(amount, level);
+      const user = await this._userService.createNew(child.userId);
+
+      //console.log('User  ::::::::::::::::::: ', user);
+
+      // Fetch immediate parent's parents
+      const immediateParentParents = parentUser.allParents || [];
+
+      const parentsToAdd = [
+        //add immedeate parent to the current user's allParent array
+        {
+          address: parentUser.address,
+          currentUserLevel: immediateParentParents.length + 1,
+          levelFromCurrentChild: 1,
+        },
+        //add all parent of immediate parent to the current user's allParent array
+        ...immediateParentParents.map((parent) => ({
+          address: parent.address,
+          currentUserLevel: parent.currentUserLevel,
+          levelFromCurrentChild: parent.levelFromCurrentChild + 1,
+        })),
+      ];
+
+      //add parents in child node as well as set other properties as well like parentAddress , refAddress , currentuserLevel and many more
+      const currentUser = await this._userService.findOneAndUpdate(
+        { address: new RegExp(child.userId) },
+        {
+          $set: {
+            parentAddress: parentUser.address,
+            refAddress: parentUser.address,
+            currentuserLevel: parentUser.currentuserLevel + 1,
+            parentuserLevel: parentUser.currentuserLevel,
+            currentuserChildNumber: parentUser.children.length + 1,
+            'nodeVolume.total': amount,
+            'capingLimit.limit': amount * 3,
+            'capingLimit.remainingLimit': amount * 3,
+            'capingLimit.used': 0,
+          },
+          $push: {
+            allParents: {
+              $each: parentsToAdd,
+            },
+          },
+        },
+        {
+          new: true,
+          rawResult: true,
+        },
+      );
+
+      //console.log('Current Updated User ::::::::::::', currentUser);
+
+      //update children array of immedeate parent of current user(I mean add this child in children Array) //===> update children array of parent user of current user
+      const childrens = await this._userService.findOneAndUpdate(
+        { address: parentUser.address },
+        {
+          $push: {
+            children: {
+              address: currentUser.address,
+              childrenNumber: parentUser.children.length + 1,
+              parentAddress: parentUser.address,
+              currentUserLevel: currentUser.currentuserLevel,
+            },
+          },
+          $inc: {
+            'directIncome.businessVolume': amount,
+            'directIncome.totalMember': 1,
+          },
+        },
+        {
+          new: true,
+          rawResult: true,
+        },
+      );
+      //console.log('ChildrenArray Of Immediate parent', children);
+
+      // add this current user to all its above parents allParent A array till 20 level (calculate level from bottom to top immedeate parent of current node consider at level 1 and goes above)
+      for (const parent of immediateParentParents) {
+        const parentChildrenArray = await this._userService.findOneAsync({
+          address: parent.address,
+        });
+        if (parent.currentUserLevel <= 20) {
+          await this._userService.findOneAndUpdate(
+            { address: parent.address },
+            {
+              $push: {
+                children: {
+                  address: currentUser.address,
+                  currentUserLevel: currentUser.currentuserLevel,
+                  childrenNumber: parentChildrenArray.children.length + 1,
+                  parentAddress: parent.address,
+                },
+              },
+            },
+            {
+              new: true,
+              rawResult: true,
+            },
+          );
+          //console.log('Children Array From Loop ::::::::', children);
+        }
+      }
+
+      return user;
     } catch (error) {
       console.error('Error creating new user:', error);
     }
   }
 
-  async getIUser(): Promise<IUser | null> {
-    if (!this._userService) {
-      console.error('UserService not provided.');
-      return null;
-    }
+  async getParent(address: string) {
+    const user = await this._userService.findOneUserAsync(address);
+    return user;
+  }
 
-    try {
-      const userDataArray: Document<
-        unknown,
-        {},
-        IUser & Document<any, any, any>
-      >[] = await this._userService.find({
-        address: this.userId,
-      });
-
-      // Assuming you want the first user if there are multiple matches
-      const userData: IUser | undefined = userDataArray[0]?.toObject() as IUser;
-
-      return userData;
-    } catch (error) {
-      console.error('Error while fetching IUser:', error);
-      return null;
-    }
+  async updateParentRecord(address: string) {
+    await this._userService.findOneAndUpdate({ address: address }, {});
   }
 }

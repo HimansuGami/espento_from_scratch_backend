@@ -1,5 +1,5 @@
 import { Document, Types } from 'mongoose';
-import { UserNode } from 'src/Services/user.node.model copy';
+import { UserNode } from 'src/Services/user.node.model';
 export class LevelLogsDto {
   from: string;
   active: number;
@@ -51,7 +51,6 @@ export class IUser {
   approvedClaimAmount: number;
   designation: DESIGNATION;
   nodeVolume: number;
-  achievedVolume: number;
   newVolume: number;
   businessVolum: number;
   levelIncome: {
@@ -62,10 +61,11 @@ export class IUser {
     levelLogs: LevelLogsDto[];
     lastClaimedAt: typeof Date | undefined;
   };
-  affiliateIncome: {
+  degignationIncome: {
     active: number;
     totalClaimed: number;
     lastClaimedAt: typeof Date | undefined;
+    achievedVolume: number;
   };
   directIncome: {
     active: number;
