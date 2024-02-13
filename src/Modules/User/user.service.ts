@@ -153,20 +153,12 @@ export class UserService {
     update: UpdateQuery<IUser>,
     options?: QueryOptions & { rawResult: true; new: true },
   ) {
-    console.log('FILTER', filter);
-    console.log('UPDATE', update);
-
     try {
       const res = await this.userModel.findOneAndUpdate(
         filter,
         update,
         options,
       );
-      if (res.address) {
-        console.log('Perform some action if required in if block');
-      } else {
-        console.log('Perform some action if required in else part');
-      }
       return res;
     } catch (error) {
       console.error('findOneAndUpdate from USER_SERVICE 159');

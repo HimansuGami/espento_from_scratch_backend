@@ -8,6 +8,7 @@ import { AdminModule } from './Modules/Admin/admin.module';
 import { DatabaseModule } from './Modules/Mongoose_Database/database.module';
 import { TransactionModule } from './Modules/Transaction/transaction.module';
 import { AnalyticsModule } from './Modules/Analytics/analytics.module';
+import { AffiliateTreeService } from './Services/tree.services copy';
 
 @Module({
   imports: [
@@ -26,6 +27,6 @@ import { AnalyticsModule } from './Modules/Analytics/analytics.module';
     AnalyticsModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, AffiliateTreeService],
 })
 export class AppModule {}
