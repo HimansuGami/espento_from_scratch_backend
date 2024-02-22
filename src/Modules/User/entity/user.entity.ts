@@ -56,14 +56,14 @@ export const UserSchema = new Schema<IUser>(
       levelLogs: {
         type: [
           {
-            from: { type: String },
-            active: { type: Number, min: 0 },
-            total: { type: Number, min: 0 },
+            //from: { type: String },
+            //active: { type: Number, min: 0 },
+            totalNodeVolume: { type: Number, min: 0 },
             fromLevel: { type: Number, min: 0 },
-            src: { type: String },
+            //src: { type: String },
           },
         ],
-        default: [{ from: ZERO_ADDR, fromLevel: 1, active: 0, total: 0 }],
+        //default: [{ from: ZERO_ADDR, fromLevel: 1, active: 0, total: 0 }],
       },
       lastClaimedAt: { type: Schema.Types.Date, default: undefined },
       firstClaimedAt: { type: Schema.Types.Date, default: undefined },
@@ -80,7 +80,7 @@ export const UserSchema = new Schema<IUser>(
       active: { type: Number, default: 0, min: 0 },
       totalClaimed: { type: Number, default: 0, min: 0 },
       lastClaimedAt: { type: Schema.Types.Date, default: undefined },
-      achievedVolume: { type: Number, default: ACHIEVEDVOLUME.BRONZE },
+      achievedVolume: { type: Number, default: 0 },
     },
     capingLimit: {
       used: { type: Number, default: 0, min: 0 },

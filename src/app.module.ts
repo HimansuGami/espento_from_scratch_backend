@@ -9,6 +9,8 @@ import { DatabaseModule } from './Modules/Mongoose_Database/database.module';
 import { TransactionModule } from './Modules/Transaction/transaction.module';
 import { AnalyticsModule } from './Modules/Analytics/analytics.module';
 import { AffiliateTreeService } from './Services/tree.services';
+import { ScheduleModule } from '@nestjs/schedule';
+import { LedgerService } from './Shared/Services/ledger.service';
 
 @Module({
   imports: [
@@ -20,6 +22,7 @@ import { AffiliateTreeService } from './Services/tree.services';
       isGlobal: true,
       envFilePath: ['.env'],
     }),
+    ScheduleModule.forRoot(),
     DatabaseModule,
     UserModule,
     AdminModule,
@@ -27,6 +30,6 @@ import { AffiliateTreeService } from './Services/tree.services';
     AnalyticsModule,
   ],
   controllers: [AppController],
-  providers: [AppService, AffiliateTreeService],
+  providers: [AppService, AffiliateTreeService, LedgerService],
 })
 export class AppModule {}

@@ -1,11 +1,11 @@
 import { Document, Types } from 'mongoose';
 import { UserNode } from 'src/Services/user.node.model';
 export class LevelLogsDto {
-  from: string;
-  active: number;
-  total: number;
+  //from: string;
+  //active: number;
+  totalNodeVolume: number;
   fromLevel: number;
-  src: DIST_INCOME_ON_EVENTS_TYPE;
+  //src: DIST_INCOME_ON_EVENTS_TYPE;
 }
 
 export class ChildrenDto {

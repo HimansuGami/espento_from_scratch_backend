@@ -1,5 +1,12 @@
+import { log } from 'console';
 import { IUser } from 'src/Modules/User/Interfaces/Iuser';
 import { UserService } from 'src/Modules/User/user.service';
+import {
+  BLOCKS_PER_DAY,
+  FARM_APR,
+  FARM_TENURE,
+} from 'src/Shared/Constants/shared.constant';
+import { LedgerService } from 'src/Shared/Services/ledger.service';
 
 // user-node.model.ts
 export class UserNode {
@@ -7,6 +14,7 @@ export class UserNode {
   constructor(
     userId: string,
     private readonly _userService: UserService,
+    private readonly _ledgerService?: LedgerService,
   ) {
     this.userId = userId;
   }
@@ -48,28 +56,42 @@ export class UserNode {
     parentRecord: IUser,
   ): Promise<void> {
     // -----------------------   Level-wise reward calculation
-    const levelRewardPercentage = this.getLevelRewardPercentage(level);
-    let levelReward = amount * (levelRewardPercentage / 100);
+    this.getLevelRewardPerBlock(level, amount, parentRecord.address, userId);
+    //let levelReward = amount * (levelRewardPercentage / 100);
 
     //------------------------ Direct reward calculation
-    let directReward = 0;
-    if (level === 1) {
-      const directRewardPercentage = this.getDirectRewardPercentage(level);
-      directReward = amount * (directRewardPercentage / 100);
-    }
+    this.getDirectRewardPercentage(level, amount, parentRecord.address);
+  }
 
-    // Total reward calculation
-    parentRecord.approvedClaimAmount = levelReward + directReward;
+  async getLevelRewardPerBlock(
+    level: number,
+    amount: number,
+    address: string,
+    fromAddress: string,
+  ) {
+    const levelRewards = [
+      15, 10, 7, 7, 7, 7, 5, 5, 5, 5, 4, 4, 4, 4, 4, 3, 3, 3, 3, 3,
+    ];
+    const levelRewardPercentage =
+      level <= levelRewards.length ? levelRewards[level - 1] : 0;
 
+    const totalPercentage = FARM_TENURE * FARM_APR;
+
+    const totalDistributaedAmount = amount * (totalPercentage / 100);
+
+    const totalReceievableAmount =
+      totalDistributaedAmount * (levelRewardPercentage / 100);
+
+    const perDayReceivableReward = totalReceievableAmount / (FARM_TENURE * 365);
+
+    const levelRewardPerBlock = perDayReceivableReward / BLOCKS_PER_DAY;
     await this._userService.findOneAndUpdate(
-      { address: new RegExp(parentRecord.address, 'i') },
+      { address: new RegExp(address, 'i') },
       {
         $inc: {
-          'directIncome.active': directReward,
-          'levelIncome.totalClaimed': levelReward,
-          approvedClaimAmount: directReward + levelReward,
-          'capingLimit.remainingLimit': -levelReward,
-          'capingLimit.used': +levelReward,
+          'levelIncome.active': levelRewardPerBlock,
+          'capingLimit.remainingLimit': -levelRewardPerBlock,
+          'capingLimit.used': +levelRewardPerBlock,
         },
       },
       {
@@ -77,17 +99,33 @@ export class UserNode {
         rawResult: true,
       },
     );
+
+    //entry in levelRewardLedger
+    console.log({ address, fromAddress, amount, level });
+    console.log(this._ledgerService);
+
+    await this._ledgerService.createNew(address, fromAddress, amount, level);
   }
 
-  private getLevelRewardPercentage(level: number): number {
-    const levelRewards = [
-      15, 10, 7, 7, 7, 7, 5, 5, 5, 5, 4, 4, 4, 4, 4, 3, 3, 3, 3, 3,
-    ];
-    return level <= levelRewards.length ? levelRewards[level - 1] : 0;
-  }
+  async getDirectRewardPercentage(level, amount, address) {
+    const directRewardPercentage = level === 1 ? 5 : 0; // 5% direct reward if there are direct children, otherwise 0
 
-  private getDirectRewardPercentage(level): number {
-    return level === 1 ? 5 : 0; // 5% direct reward if there are direct children, otherwise 0
+    let directReward = 0;
+    if (level === 1) {
+      directReward = amount * (directRewardPercentage / 100);
+    }
+    await this._userService.findOneAndUpdate(
+      { address: new RegExp(address, 'i') },
+      {
+        $inc: {
+          'directIncome.active': directReward,
+        },
+      },
+      {
+        new: true,
+        rawResult: true,
+      },
+    );
   }
 
   //added code
@@ -129,7 +167,7 @@ export class UserNode {
             currentuserLevel: parentUser.currentuserLevel + 1,
             parentuserLevel: parentUser.currentuserLevel,
             currentuserChildNumber: parentUser.children.length + 1,
-            'nodeVolume.total': amount,
+            nodeVolume: amount,
             'capingLimit.limit': amount * 3,
             'capingLimit.remainingLimit': amount * 3,
             'capingLimit.used': 0,
@@ -163,6 +201,8 @@ export class UserNode {
           $inc: {
             'directIncome.businessVolume': amount,
             'directIncome.totalMember': 1,
+            'levelIncome.activeLevels': 1,
+            nodeVolume: amount,
           },
         },
         {
@@ -188,6 +228,12 @@ export class UserNode {
                   childrenNumber: parentChildrenArray.children.length + 1,
                   parentAddress: parent.address,
                 },
+              },
+              $inc: {
+                'directIncome.businessVolume': amount,
+                'directIncome.totalMember': 1,
+                'levelIncome.activeLevels': 1,
+                nodeVolume: amount,
               },
             },
             {

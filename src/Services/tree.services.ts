@@ -3,11 +3,11 @@ import { Injectable } from '@nestjs/common';
 import { UserNode } from './user.node.model';
 import { UserService } from 'src/Modules/User/user.service';
 import { IUser } from 'src/Modules/User/Interfaces/Iuser';
+import { RewardService } from './reward.service';
 
 @Injectable()
 export class AffiliateTreeService {
   private root: UserNode;
-
   constructor(private readonly _userService: UserService) {
     this.root = new UserNode(
       '0x0000000000000000000000000000000000000000',

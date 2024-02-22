@@ -18,7 +18,7 @@ import { API_RESPONSE } from 'src/Shared/Interfaces/Ishared.interface';
 export class UserService {
   constructor(
     @InjectModel('users')
-    private readonly userModel: Model<IUser & Document>,
+    private readonly USER_DB: Model<IUser & Document>,
     private readonly _configService: ConfigService,
   ) {
     // const userName = this._configService.get<string>(
@@ -39,7 +39,7 @@ export class UserService {
     // console.log(url, 'url');
     // console.log(isLocal(), 'isLocal');
 
-    console.log('USERMODEL', userModel);
+    console.log('USER_DB', USER_DB);
   }
 
   async getHello(): Promise<API_RESPONSE> {
@@ -52,7 +52,7 @@ export class UserService {
   //below function add user in the DB using DTO
   async addUserAsync(userDto: IUser): Promise<API_RESPONSE> {
     try {
-      const DATA = await this.userModel.create(userDto);
+      const DATA = await this.USER_DB.create(userDto);
       return {
         message: 'User Added successfully',
         data: DATA,
@@ -85,7 +85,7 @@ export class UserService {
       | undefined,
   ): Promise<IUser | null> {
     try {
-      return await this.userModel.findOne(obj, projection);
+      return await this.USER_DB.findOne(obj, projection);
     } catch (error) {
       console.log(error, 'ERROR FROM USER_SERVICE 73');
     }
@@ -100,7 +100,7 @@ export class UserService {
       | undefined,
   ): Promise<IUser[]> {
     try {
-      return await this.userModel.find(obj, projection);
+      return await this.USER_DB.find(obj, projection);
     } catch (error) {
       console.log(error, 'ERROR FROM USER_SERVICE 88');
     }
@@ -115,7 +115,7 @@ export class UserService {
       | undefined,
   ) {
     try {
-      return await this.userModel.find(obj, projection);
+      return await this.USER_DB.find(obj, projection);
     } catch (error) {
       console.log(error, 'ERROR FROM USER_SERVICE 102');
     }
@@ -124,7 +124,7 @@ export class UserService {
   //below function count total number of users in the DB
   async count(): Promise<number> {
     try {
-      return await this.userModel.find({}).countDocuments();
+      return await this.USER_DB.find({}).countDocuments();
     } catch (error) {
       console.log(error, 'ERROR FROM USER_SERVICE 111');
     }
@@ -140,7 +140,7 @@ export class UserService {
     console.log('UPDATE', update);
 
     try {
-      return this.userModel.findByIdAndUpdate(id, update, options);
+      return this.USER_DB.findByIdAndUpdate(id, update, options);
     } catch (error) {
       console.error('findOneByIdAndUpdate from USER_SERVICE 118');
       console.error(error);
@@ -154,11 +154,7 @@ export class UserService {
     options?: QueryOptions & { rawResult: true; new: true },
   ) {
     try {
-      const res = await this.userModel.findOneAndUpdate(
-        filter,
-        update,
-        options,
-      );
+      const res = await this.USER_DB.findOneAndUpdate(filter, update, options);
       return res;
     } catch (error) {
       console.error('findOneAndUpdate from USER_SERVICE 159');
@@ -169,7 +165,7 @@ export class UserService {
   //below function create new user based on address that they have and remaining filed assigned by it's default value
   async createNew(address: string) {
     try {
-      const user = this.userModel.create({ address: address });
+      const user = this.USER_DB.create({ address: address });
       return user;
     } catch (error) {
       console.error('createNew from USER_SERVICE 170');
@@ -226,4 +222,47 @@ export class UserService {
     const addresses = users.map((user) => user.address);
     return addresses;
   };
+
+  async getAllChildren(address: string) {
+    const children = await this.USER_DB.find({ refAddress: address });
+    console.log({ child: children.length });
+
+    const groupedChildren = children.reduce((result, child) => {
+      const level = child.currentuserLevel;
+      const levelIncome = child.levelIncome.active;
+      const existingEntry = result.find(
+        (entry) => entry.currentuserLevel === level,
+      );
+
+      if (existingEntry) {
+        existingEntry.nodeVolume += child.nodeVolume;
+        existingEntry.levelIncome.active += child.levelIncome.active;
+      } else {
+        result.push({
+          currentuserLevel: level,
+          nodeVolume: child.nodeVolume,
+        });
+      }
+
+      return result;
+    }, []);
+
+    console.log({ groupedChildren });
+
+    groupedChildren.forEach(async (item) => {
+      await this.USER_DB.findOneAndUpdate(
+        { address: address },
+        {
+          $push: {
+            'levelIncome.levelLogs': {
+              totalNodeVolume: item.nodeVolume,
+              fromLevel: item.currentuserLevel,
+            },
+          },
+        },
+      );
+    });
+
+    return children;
+  }
 }

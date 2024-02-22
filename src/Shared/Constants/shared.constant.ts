@@ -1,3 +1,4 @@
 export const ZERO_ADDR = '0x0000000000000000000000000000000000000000';
-export const FARM_APR = 50;
+export const FARM_APR = 25;
 export const FARM_TENURE = 2;
+export const BLOCKS_PER_DAY = 17280;
