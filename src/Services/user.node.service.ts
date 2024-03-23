@@ -1,4 +1,6 @@
+import { InjectModel } from '@nestjs/mongoose';
 import { log } from 'console';
+import { Model } from 'mongoose';
 import { IUser } from 'src/Modules/User/Interfaces/Iuser';
 import { UserService } from 'src/Modules/User/user.service';
 import {
@@ -7,38 +9,43 @@ import {
   FARM_TENURE,
 } from 'src/Shared/Constants/shared.constant';
 import { LedgerService } from 'src/Shared/Services/ledger.service';
+import { RewardService } from './reward.service';
 
 // user-node.model.ts
-export class UserNode {
-  userId: string;
+export class UserNodeService {
   constructor(
-    userId: string,
+    @InjectModel('users')
+    private readonly USER_DB: Model<IUser & Document>,
     private readonly _userService: UserService,
-    private readonly _ledgerService?: LedgerService,
-  ) {
-    this.userId = userId;
-  }
+    private readonly _rewardService: RewardService,
+  ) {}
 
-  async addChild(child: UserNode, amount: number): Promise<IUser> {
-    const addedUser = await this.createNew(child, amount);
+  async addUser(
+    parentUserAddress: string,
+    userAddress: string,
+    amount: number,
+  ): Promise<IUser> {
+    const addedUser = await this.createNew(
+      parentUserAddress,
+      userAddress,
+      amount,
+    );
 
     //get all parents for this particular user from the database
-    const currentChild = await this._userService.findOneAsync({
-      address: RegExp(child.userId, 'i'),
+
+    //==================================> need to dounle check is this below line of code is necessary
+    const currentUser = await this.USER_DB.findOne({
+      address: userAddress,
     });
-    //console.log('ALL CHILD for this particular child', currentChild.children);
+    //console.log('ALL CHILD for this particular child', all_parrnts_of_current_child.children);
 
-    for (const parent of currentChild.allParents) {
+    for (const parent of currentUser.allParents) {
       try {
-        const parentRecord = await this._userService.findOneAsync({
-          address: new RegExp(parent.address, 'i'),
-        });
-
         this.calculateReward(
           amount,
           parent.levelFromCurrentChild,
+          userAddress,
           parent.address,
-          parentRecord,
         );
       } catch (error) {
         console.error(
@@ -51,106 +58,49 @@ export class UserNode {
 
   async calculateReward(
     amount: number,
-    level: number,
-    userId: string,
-    parentRecord: IUser,
+    fromLevel: number,
+    fromAddress: string,
+    toAddress: string,
   ): Promise<void> {
     // -----------------------   Level-wise reward calculation
-    this.getLevelRewardPerBlock(level, amount, parentRecord.address, userId);
-    //let levelReward = amount * (levelRewardPercentage / 100);
+    this._rewardService.getLevelRewardPerBlock(
+      amount,
+      fromLevel,
+      fromAddress,
+      toAddress,
+    );
 
     //------------------------ Direct reward calculation
-    this.getDirectRewardPercentage(level, amount, parentRecord.address);
-  }
-
-  async getLevelRewardPerBlock(
-    level: number,
-    amount: number,
-    address: string,
-    fromAddress: string,
-  ) {
-    const levelRewards = [
-      15, 10, 7, 7, 7, 7, 5, 5, 5, 5, 4, 4, 4, 4, 4, 3, 3, 3, 3, 3,
-    ];
-    const levelRewardPercentage =
-      level <= levelRewards.length ? levelRewards[level - 1] : 0;
-
-    const totalPercentage = FARM_TENURE * FARM_APR;
-
-    const totalDistributaedAmount = amount * (totalPercentage / 100);
-
-    const totalReceievableAmount =
-      totalDistributaedAmount * (levelRewardPercentage / 100);
-
-    const perDayReceivableReward = totalReceievableAmount / (FARM_TENURE * 365);
-
-    const levelRewardPerBlock = perDayReceivableReward / BLOCKS_PER_DAY;
-    await this._userService.findOneAndUpdate(
-      { address: new RegExp(address, 'i') },
-      {
-        $inc: {
-          'levelIncome.active': levelRewardPerBlock,
-          'capingLimit.remainingLimit': -levelRewardPerBlock,
-          'capingLimit.used': +levelRewardPerBlock,
-        },
-      },
-      {
-        new: true,
-        rawResult: true,
-      },
-    );
-
-    //entry in levelRewardLedger
-    console.log({ address, fromAddress, amount, level });
-    console.log(this._ledgerService);
-
-    await this._ledgerService.createNew(address, fromAddress, amount, level);
-  }
-
-  async getDirectRewardPercentage(level, amount, address) {
-    const directRewardPercentage = level === 1 ? 5 : 0; // 5% direct reward if there are direct children, otherwise 0
-
-    let directReward = 0;
-    if (level === 1) {
-      directReward = amount * (directRewardPercentage / 100);
-    }
-    await this._userService.findOneAndUpdate(
-      { address: new RegExp(address, 'i') },
-      {
-        $inc: {
-          'directIncome.active': directReward,
-        },
-      },
-      {
-        new: true,
-        rawResult: true,
-      },
+    this._rewardService.getDirectRewardPercentage(
+      amount,
+      fromLevel,
+      fromAddress,
+      toAddress,
     );
   }
 
-  //added code
-
-  async createNew(child, amount): Promise<IUser> {
+  async createNew(parentUserAddress, childAddress, amount): Promise<IUser> {
     try {
-      const parentUser = await this.getParent(this.userId);
+      //getparent user record
+      const parentUser = await this.getParent(parentUserAddress);
       //console.log('Parent user :::::::::::::', parentUser);
 
-      const user = await this._userService.createNew(child.userId);
-
+      //create user
+      const create_user = await this._userService.createNew(childAddress);
       //console.log('User  ::::::::::::::::::: ', user);
 
       // Fetch immediate parent's parents
-      const immediateParentParents = parentUser.allParents || [];
+      const parents_Of_immediate_parent = parentUser.allParents || [];
 
       const parentsToAdd = [
         //add immedeate parent to the current user's allParent array
         {
           address: parentUser.address,
-          currentUserLevel: immediateParentParents.length + 1,
+          currentUserLevel: parents_Of_immediate_parent.length + 1,
           levelFromCurrentChild: 1,
         },
         //add all parent of immediate parent to the current user's allParent array
-        ...immediateParentParents.map((parent) => ({
+        ...parents_Of_immediate_parent.map((parent) => ({
           address: parent.address,
           currentUserLevel: parent.currentUserLevel,
           levelFromCurrentChild: parent.levelFromCurrentChild + 1,
@@ -159,7 +109,7 @@ export class UserNode {
 
       //add parents in child node as well as set other properties as well like parentAddress , refAddress , currentuserLevel and many more
       const currentUser = await this._userService.findOneAndUpdate(
-        { address: new RegExp(child.userId) },
+        { address: new RegExp(childAddress) },
         {
           $set: {
             parentAddress: parentUser.address,
@@ -171,6 +121,10 @@ export class UserNode {
             'capingLimit.limit': amount * 3,
             'capingLimit.remainingLimit': amount * 3,
             'capingLimit.used': 0,
+            'investments.lastInvestedAt': new Date(),
+          },
+          $inc: {
+            'investments.total': amount,
           },
           $push: {
             allParents: {
@@ -183,11 +137,10 @@ export class UserNode {
           rawResult: true,
         },
       );
-
       //console.log('Current Updated User ::::::::::::', currentUser);
 
       //update children array of immedeate parent of current user(I mean add this child in children Array) //===> update children array of parent user of current user
-      const childrens = await this._userService.findOneAndUpdate(
+      await this._userService.findOneAndUpdate(
         { address: parentUser.address },
         {
           $push: {
@@ -196,6 +149,8 @@ export class UserNode {
               childrenNumber: parentUser.children.length + 1,
               parentAddress: parentUser.address,
               currentUserLevel: currentUser.currentuserLevel,
+              childLevelFromParent:
+                currentUser.currentuserLevel - parentUser.currentuserLevel,
             },
           },
           $inc: {
@@ -210,15 +165,14 @@ export class UserNode {
           rawResult: true,
         },
       );
-      //console.log('ChildrenArray Of Immediate parent', children);
 
-      // add this current user to all its above parents allParent A array till 20 level (calculate level from bottom to top immedeate parent of current node consider at level 1 and goes above)
-      for (const parent of immediateParentParents) {
+      // add this current user to all its above parents allParent array till 20 level (calculate level from bottom to top immedeate parent of current node consider at level 1 and goes above)
+      for (const parent of parents_Of_immediate_parent) {
         const parentChildrenArray = await this._userService.findOneAsync({
           address: parent.address,
         });
         if (parent.currentUserLevel <= 20) {
-          await this._userService.findOneAndUpdate(
+          const children = await this._userService.findOneAndUpdate(
             { address: parent.address },
             {
               $push: {
@@ -227,6 +181,8 @@ export class UserNode {
                   currentUserLevel: currentUser.currentuserLevel,
                   childrenNumber: parentChildrenArray.children.length + 1,
                   parentAddress: parent.address,
+                  childLevelFromParent:
+                    currentUser.currentuserLevel - parent.currentUserLevel,
                 },
               },
               $inc: {
@@ -241,18 +197,17 @@ export class UserNode {
               rawResult: true,
             },
           );
-          //console.log('Children Array From Loop ::::::::', children);
         }
       }
 
-      return user;
+      return currentUser;
     } catch (error) {
       console.error('Error creating new user:', error);
     }
   }
 
   async getParent(address: string) {
-    const user = await this._userService.findOneUserAsync(address);
+    const user = await this.USER_DB.findOne({ address: address });
     return user;
   }
 

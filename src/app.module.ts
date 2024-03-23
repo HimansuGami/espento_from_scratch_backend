@@ -11,6 +11,8 @@ import { AnalyticsModule } from './Modules/Analytics/analytics.module';
 import { AffiliateTreeService } from './Services/tree.services';
 import { ScheduleModule } from '@nestjs/schedule';
 import { LedgerService } from './Shared/Services/ledger.service';
+import { UserNodeService } from './Services/user.node.service';
+import { RewardService } from './Services/reward.service';
 
 @Module({
   imports: [
@@ -30,6 +32,12 @@ import { LedgerService } from './Shared/Services/ledger.service';
     AnalyticsModule,
   ],
   controllers: [AppController],
-  providers: [AppService, AffiliateTreeService, LedgerService],
+  providers: [
+    AppService,
+    AffiliateTreeService,
+    LedgerService,
+    UserNodeService,
+    RewardService,
+  ],
 })
 export class AppModule {}

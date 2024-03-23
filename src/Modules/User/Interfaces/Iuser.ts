@@ -1,5 +1,4 @@
 import { Document, Types } from 'mongoose';
-import { UserNode } from 'src/Services/user.node.model';
 export class LevelLogsDto {
   //from: string;
   //active: number;
@@ -12,7 +11,10 @@ export class ChildrenDto {
   address: string;
   childrenNumber: number;
   parentAddress: string;
-  currentUserLevel: Number;
+  currentUserLevel: number;
+  childLevelFromParent: number;
+  calculatedDegignationVolume: number;
+  carryForwardDegignationVolume: number;
 }
 
 export enum DESIGNATION {
@@ -32,9 +34,6 @@ export class AllParentsDto {
   levelFromCurrentChild: number;
 }
 export class IUser {
-  addChild(newUser: UserNode, amount: number) {
-    throw new Error('Method not implemented.');
-  }
   address: string;
   isMemeber: boolean;
   ref: Types.ObjectId;
@@ -68,10 +67,12 @@ export class IUser {
     achievedVolume: number;
   };
   directIncome: {
+    totalMember: any;
     active: number;
     businessVolume: number;
     totalClaimed: number;
     lastClaimedAt: typeof Date | undefined;
+    activeMember: number;
   };
   capingLimit: {
     used: number;

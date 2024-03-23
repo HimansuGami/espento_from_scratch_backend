@@ -1,56 +1,48 @@
 // affiliate-tree.service.ts
 import { Injectable } from '@nestjs/common';
-import { UserNode } from './user.node.model';
+import { UserNodeService } from './user.node.service';
 import { UserService } from 'src/Modules/User/user.service';
 import { IUser } from 'src/Modules/User/Interfaces/Iuser';
 import { RewardService } from './reward.service';
 
 @Injectable()
 export class AffiliateTreeService {
-  private root: UserNode;
-  constructor(private readonly _userService: UserService) {
-    this.root = new UserNode(
-      '0x0000000000000000000000000000000000000000',
-      _userService,
-    );
-  }
+  constructor(
+    private readonly _userService: UserService,
+    private readonly _userNodeService: UserNodeService,
+  ) {}
 
   async addUser(
-    parentUserId: string,
-    userId: string,
+    parentUserAddress: string,
+    userAddress: string,
     amount: number,
     level: number,
   ): Promise<void> {
     try {
-      const parentNode = await this.findNode(this.root, parentUserId);
-      if (parentNode instanceof UserNode) {
-        const newUser = new UserNode(userId, this._userService);
-        await parentNode.addChild(newUser, amount);
+      const parentNode = await this.idParentExist(parentUserAddress);
+      if (parentNode) {
+        await this._userNodeService.addUser(
+          parentUserAddress,
+          userAddress,
+          amount,
+        );
       } else {
-        throw new Error('Parent user not found');
+        //create user without parent address
+        await this._userService.createNew(userAddress);
+        console.log('USER DOES?T HAVE REFFRAL ADDRESS ::');
       }
     } catch (error) {
       console.error('Error:', error);
-      // Handle the error appropriately
     }
   }
 
-  private async findNode(
-    rootNode: UserNode | null,
-    userId: string,
-  ): Promise<UserNode | null | IUser> {
+  async idParentExist(userId: string): Promise<IUser | null> {
     try {
-      if (rootNode.userId === userId) return rootNode;
-
-      await this._userService.findOneUserAsync(userId);
-      return new UserNode(userId, this._userService);
+      const parentUser = await this._userService.findOneUserAsync(userId);
+      return parentUser;
     } catch (error) {
       console.error('Error while finding parent user:', error);
       return null;
     }
-  }
-
-  getAffiliateTree(): UserNode {
-    return this.root;
   }
 }

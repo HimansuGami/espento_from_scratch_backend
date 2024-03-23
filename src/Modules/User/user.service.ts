@@ -66,10 +66,7 @@ export class UserService {
   //below function get single user by address from the DB
   async findOneUserAsync(userAddress: string): Promise<IUser | null> {
     try {
-      const result = await this.findOneAsync({
-        address: new RegExp(userAddress, 'i'),
-      });
-      console.log('TYPE', typeof result);
+      const result = await this.USER_DB.findOne({ address: userAddress });
       return result;
     } catch (error) {
       console.log(error, 'ERROR FROM USER_SERVICE 58');
