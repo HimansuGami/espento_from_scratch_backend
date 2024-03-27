@@ -57,6 +57,8 @@ describe('StakeController', () => {
       jest.spyOn(service, 'addStakeAsync').mockResolvedValue(mockResponse);
 
       const result = await controller.addStake(mockRequest);
+      console.log({ result });
+
       expect(service.addStakeAsync).toHaveBeenCalledWith(
         mockRequest.amount,
         mockRequest.user_address,
@@ -66,6 +68,37 @@ describe('StakeController', () => {
       );
       expect(result).toEqual(mockResponse);
     });
+
+    // it('should return an error when user address is missing', async () => {
+    //   const mockRequest = {
+    //     amount: 100,
+    //     stake_apr: 5,
+    //     stake_type: 'test_stake_type',
+    //     time_tenure: 365,
+    //   };
+    //   //@ts-ignore
+    //   const result = await controller.addStake(mockRequest);
+
+    //   expect(service.addStakeAsync).not.toHaveBeenCalled();
+    //   expect(result.statusCode).toEqual(400);
+    //   expect(result.message).toContain('user_address');
+    // });
+
+    // it('should return an error for invalid stake amount', async () => {
+    //   const mockRequest = {
+    //     amount: 0,
+    //     user_address: 'test_user_address',
+    //     stake_apr: 5,
+    //     stake_type: 'test_stake_type',
+    //     time_tenure: 365,
+    //   };
+
+    //   const result = await controller.addStake(mockRequest);
+
+    //   expect(service.addStakeAsync).not.toHaveBeenCalled();
+    //   expect(result.statusCode).toEqual(400);
+    //   expect(result.message).toContain('amount');
+    // });
   });
 
   describe('stakeClaim', () => {
@@ -96,6 +129,33 @@ describe('StakeController', () => {
       );
       expect(result).toEqual(mockResponse);
     });
+
+    // it('should return an error when user address is missing', async () => {
+    //   const mockRequest = {
+    //     amount: 50,
+    //     hash: 'test_hash',
+    //   };
+    // //@ts-ignore
+    //   const result = await controller.stakeClaim(mockRequest);
+
+    //   expect(service.stakeClaimAsync).not.toHaveBeenCalled();
+    //   expect(result.statusCode).toEqual(400); // Assuming 400 is the status code for bad request
+    //   expect(result.message).toContain('user_address');
+    // });
+
+    // it('should return an error for invalid stake amount', async () => {
+    //   const mockRequest = {
+    //     amount: 0, // Zero amount
+    //     user_address: 'test_user_address',
+    //     hash: 'test_hash',
+    //   };
+
+    //   const result = await controller.stakeClaim(mockRequest);
+
+    //   expect(service.stakeClaimAsync).not.toHaveBeenCalled();
+    //   expect(result.statusCode).toEqual(400); // Assuming 400 is the status code for bad request
+    //   expect(result.message).toContain('amount');
+    // });
   });
 
   describe('stakeClaimAll', () => {
@@ -124,12 +184,42 @@ describe('StakeController', () => {
       jest.spyOn(service, 'stakeClaimAllAsync').mockResolvedValue(mockResponse);
 
       const result = await controller.stakeClaimAll(mockRequest);
+      console.log({ result, data_1: result.data.data });
+
       expect(service.stakeClaimAllAsync).toHaveBeenCalledWith(
         mockRequest.user_address,
         mockRequest.record,
       );
       expect(result).toEqual(mockResponse);
     });
+
+    // it('should return an error when user address is missing', async () => {
+    //   const mockRequest = {
+    //     record: [
+    //       { hash: 'test_hash_1', amount: 50 },
+    //       { hash: 'test_hash_2', amount: 100 },
+    //     ],
+    //   };
+    //   //@ts-ignore
+    //   const result = await controller.stakeClaimAll(mockRequest);
+
+    //   expect(service.stakeClaimAllAsync).not.toHaveBeenCalled();
+    //   expect(result.statusCode).toEqual(400); // Assuming 400 is the status code for bad request
+    //   expect(result.message).toContain('user_address');
+    // });
+
+    // it('should return an error when record array is empty', async () => {
+    //   const mockRequest = {
+    //     user_address: 'test_user_address',
+    //     record: [],
+    //   };
+
+    //   const result = await controller.stakeClaimAll(mockRequest);
+
+    //   expect(service.stakeClaimAllAsync).not.toHaveBeenCalled();
+    //   expect(result.statusCode).toEqual(400); // Assuming 400 is the status code for bad request
+    //   expect(result.message).toContain('record');
+    // });
   });
 
   describe('stakeClaimActual', () => {
@@ -161,5 +251,18 @@ describe('StakeController', () => {
       );
       expect(result).toEqual(mockResponse);
     });
+
+    // it('should return an error when record array is empty', async () => {
+    //   const mockRequest = {
+    //     user_address: 'test_user_address',
+    //     record: [],
+    //   };
+
+    //   const result = await controller.stakeClaimAll(mockRequest);
+
+    //   expect(service.stakeClaimAllAsync).not.toHaveBeenCalled();
+    //   expect(result.statusCode).toEqual(400);
+    //   expect(result.message).toContain('record');
+    // });
   });
 });
