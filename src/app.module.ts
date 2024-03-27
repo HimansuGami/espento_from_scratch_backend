@@ -13,6 +13,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { LedgerService } from './Shared/Services/ledger.service';
 import { UserNodeService } from './Services/user.node.service';
 import { RewardService } from './Services/reward.service';
+import { StakeModule } from './Modules/Stake/Stake.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { RewardService } from './Services/reward.service';
     AdminModule,
     TransactionModule,
     AnalyticsModule,
+    StakeModule,
   ],
   controllers: [AppController],
   providers: [
