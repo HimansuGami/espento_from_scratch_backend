@@ -2,7 +2,7 @@ import { Types } from 'mongoose';
 
 export enum STAKE_TYPE {
   LP_USDT = 'LP_USDT',
-  USDT_SPENT = 'USDT_SPENT',
+  SPENT_USDT = 'SPENT_USDT',
 }
 export enum STAKE_APR {
   FIFTY = 50,

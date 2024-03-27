@@ -16,7 +16,7 @@ export const StakeRewardLedgerSchema = new Schema<IStakeRewardLedger>(
     },
     stake_type: { type: String, require: true },
     stake_apr: { type: Number, require: true },
-    amount: [{ type: Number, require: true }],
+    amount: { type: Number, require: true },
     total_receivable_amount: { type: Number, require: true },
     total_claimed_amount: { type: Number, require: true, default: 0 },
     total_generated_amount: { type: Number, require: true, default: 0 },

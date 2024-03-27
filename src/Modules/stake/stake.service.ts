@@ -5,6 +5,15 @@ import { IStakeLedger } from './Interfaces/IStakeLedger';
 import { IStakeRewardLedger } from './Interfaces/IStakeRewardLedger';
 import { Cron } from '@nestjs/schedule';
 
+interface IUpdatedStakeRecordLog {
+  user_address: string;
+  total_receivable_amount: number;
+  total_claimed_amount: number;
+  total_generated_amount: number;
+  stake_type: string;
+  stake_apr: number;
+}
+
 @Injectable()
 export class StakeService {
   constructor(
@@ -21,7 +30,7 @@ export class StakeService {
     stake_type,
     time_tenure,
   ) {
-    const data = await this.STAKE_LEDGER.create({
+    await this.STAKE_LEDGER.create({
       user_address: user_address,
       stake_apr: stake_apr,
       stake_type: stake_type,
@@ -38,10 +47,9 @@ export class StakeService {
       stake_apr: stake_apr,
       time_tenured: time_tenure,
     });
-    console.log({ prevStakeRecord });
 
     if (prevStakeRecord) {
-      await this.STAKE_REWARD_LEDGER.findOneAndUpdate(
+      const data = await this.STAKE_REWARD_LEDGER.findOneAndUpdate(
         {
           user_address: new RegExp(user_address, 'i'),
           stake_type: stake_type,
@@ -61,7 +69,7 @@ export class StakeService {
                 prevStakeRecord.total_generated_amount,
               ) + this.calculateRewardAmount(amount, stake_apr),
             starting_date: new Date(),
-            ending_date: this.stakeCompletionDate(time_tenure), //need to add and update starting and ending date
+            ending_date: this.stakeCompletionDate(time_tenure),
           },
           $push: {
             amount: amount,
@@ -72,6 +80,15 @@ export class StakeService {
           rawResult: true,
         },
       );
+      let updatedStakeRecordLog: IUpdatedStakeRecordLog = {
+        user_address: user_address,
+        total_receivable_amount: data.total_receivable_amount,
+        total_claimed_amount: data.total_claimed_amount,
+        total_generated_amount: data.total_generated_amount,
+        stake_type: stake_type,
+        stake_apr: stake_apr,
+      };
+      console.log({ updatedStakeRecordLog });
     } else {
       await this.STAKE_REWARD_LEDGER.create({
         user_address: user_address,
@@ -115,7 +132,10 @@ export class StakeService {
     if (user) {
       const amountPerSecond =
         user.total_receivable_amount / (user.time_tenured * 365 * 86400);
-      console.log({ amountPerSecond });
+      console.log({
+        user: '0x1b141f32e97be464a9fbf4075a352c944b5b51d9',
+        amountPerSecond,
+      });
 
       const data = await this.STAKE_REWARD_LEDGER.findOneAndUpdate(
         {
