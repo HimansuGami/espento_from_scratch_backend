@@ -29,3 +29,19 @@ export class IStakeClaimRequestDto {
   @ApiProperty()
   hash: string;
 }
+export class IIindividualClaimRequestDto {
+  @IsNotEmpty()
+  @ApiProperty()
+  hash: string;
+  @IsNotEmpty()
+  @ApiProperty()
+  amount: number;
+}
+export class IStakeClaimAllRequestDto {
+  @IsNotEmpty()
+  @ApiProperty()
+  user_address: string;
+  @IsNotEmpty()
+  @ApiProperty({ type: [IIindividualClaimRequestDto], isArray: true })
+  record: IIindividualClaimRequestDto[];
+}

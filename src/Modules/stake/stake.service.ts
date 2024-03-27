@@ -4,8 +4,8 @@ import { Model } from 'mongoose';
 import { IStakeLedger } from './Interfaces/IStakeLedger';
 import { IStakeRewardLedger } from './Interfaces/IStakeRewardLedger';
 import * as crypto from 'crypto';
-import { promises } from 'dns';
 import { API_RESPONSE } from 'src/Shared/Interfaces/Ishared.interface';
+import { IIindividualClaimRequestDto } from './Interfaces/IStakeRequestDto';
 interface IUpdatedStakeRecordLog {
   user_address: string;
   hash: string;
@@ -20,6 +20,15 @@ interface IStakeClaimLog {
   total_claimed_amount: number;
   last_claimed_at: Date;
   claimed_amount: number;
+}
+interface IStakeClaimAllLog {
+  user_address: string;
+  total_claimed_amount: number;
+  data: IStakeClaimAllData[];
+}
+interface IStakeClaimAllData {
+  claimed_amount: number;
+  hash: string;
 }
 
 @Injectable()
@@ -89,28 +98,23 @@ export class StakeService {
     hash: string,
   ): Promise<API_RESPONSE> {
     try {
-      const data = await this.STAKE_LEDGER.findOne({
-        user_address: user_address,
-        hash: hash,
-      });
-      if (data.total_remaining_amount >= amount) {
-        const data = await this.STAKE_LEDGER.findOneAndUpdate(
-          { user_address: user_address, hash: hash },
-          {
-            $inc: {
-              total_claimed_amount: amount,
-              total_remaining_amount: -amount,
-            },
-            $set: {
-              last_claimed_at: new Date(),
-            },
+      const data = await this.STAKE_LEDGER.findOneAndUpdate(
+        {
+          user_address: user_address,
+          hash: hash,
+          total_remaining_amount: { $gte: amount },
+        },
+        {
+          $inc: {
+            total_claimed_amount: amount,
+            total_remaining_amount: -amount,
           },
-          {
-            new: true,
-            rawResult: true,
-          },
-        );
+          $set: { last_claimed_at: new Date() },
+        },
+        { new: true, rawResult: true },
+      );
 
+      if (data) {
         await this.STAKE_REWARD_LEDGER.create({
           user_address: user_address,
           stake_type: data.stake_type,
@@ -118,24 +122,88 @@ export class StakeService {
           amount: amount,
           hash: this.generateHash(),
         });
-        let stakeClaimLog: IStakeClaimLog = {
+
+        const stakeClaimLog: IStakeClaimLog = {
           user_address: data.user_address,
           total_claimed_amount: data.total_claimed_amount,
           last_claimed_at: data.last_claimed_at,
           claimed_amount: amount,
         };
-        const returned_obj = {
+
+        const returned_obj: API_RESPONSE = {
           data: stakeClaimLog,
           message: 'stake claimed successfully',
           statusCode: 200,
         };
+
         console.log({ returned_obj });
         return returned_obj;
       } else {
-        console.log(`${user_address} is not eligable for claim`);
+        console.log(`${user_address} is not eligible for claim`);
       }
     } catch (err) {
       console.log(`Error in stake claim: ${err}`);
+      throw new Error('Error in stake claim');
+    }
+  }
+
+  async stakeClaimAllAsync(
+    user_address: string,
+    record: IIindividualClaimRequestDto[],
+  ): Promise<API_RESPONSE> {
+    try {
+      let stake_data: IStakeClaimAllData[] = [];
+      let total_amount = 0;
+      for (const claimRecord of record) {
+        const data = await this.STAKE_LEDGER.findOneAndUpdate(
+          {
+            hash: claimRecord.hash,
+            total_remaining_amount: { $gte: claimRecord.amount },
+          },
+          {
+            $inc: {
+              total_claimed_amount: claimRecord.amount,
+              total_remaining_amount: -claimRecord.amount,
+            },
+            $set: { last_claimed_at: new Date() },
+          },
+          { new: true, rawResult: true },
+        );
+        if (data) {
+          const individualClaimRecord = await this.STAKE_REWARD_LEDGER.create({
+            user_address: user_address,
+            stake_type: data.stake_type,
+            stake_apr: data.stake_apr,
+            amount: claimRecord.amount,
+            hash: this.generateHash(),
+          });
+
+          stake_data.push({
+            hash: individualClaimRecord.hash,
+            claimed_amount: individualClaimRecord.amount,
+          });
+          total_amount += claimRecord.amount;
+        } else {
+          console.log(`${user_address} is not eligible for claim`);
+        }
+      }
+
+      const stakeClaimAllLog: IStakeClaimAllLog = {
+        user_address: user_address,
+        total_claimed_amount: total_amount,
+        data: stake_data,
+      };
+      const returned_obj: API_RESPONSE = {
+        data: stakeClaimAllLog,
+        message: 'stake claimed successfully',
+        statusCode: 200,
+      };
+
+      console.log({ returned_obj });
+      return returned_obj;
+    } catch (err) {
+      console.log(`Error in stake claim: ${err}`);
+      throw new Error('Error in stake claim');
     }
   }
 
