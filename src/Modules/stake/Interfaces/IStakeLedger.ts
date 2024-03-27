@@ -21,6 +21,7 @@ export class IStakeLedger {
   time_tenured: number;
   total_remaining_amount: number;
   per_second_apr: number;
+  per_second_dollar_value: number;
   starting_date: Date;
   ending_date: Date;
   last_claimed_at: Date;

@@ -24,6 +24,7 @@ export const StakeLedgerSchema = new Schema<IStakeLedger>(
     time_tenured: { type: Number, require: true },
     starting_date: { type: Date, required: true },
     per_second_apr: { type: Number, default: 0 },
+    per_second_dollar_value: { type: Number, default: 0 },
     ending_date: { type: Date, required: true },
     last_claimed_at: { type: Date },
   },

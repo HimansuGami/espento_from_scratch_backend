@@ -37,6 +37,7 @@ export class IIindividualClaimRequestDto {
   @ApiProperty()
   amount: number;
 }
+
 export class IStakeClaimAllRequestDto {
   @IsNotEmpty()
   @ApiProperty()
@@ -44,4 +45,17 @@ export class IStakeClaimAllRequestDto {
   @IsNotEmpty()
   @ApiProperty({ type: [IIindividualClaimRequestDto], isArray: true })
   record: IIindividualClaimRequestDto[];
+}
+export class IIindividualClaimWithHashRequestDto {
+  @IsNotEmpty()
+  @ApiProperty()
+  hash: string;
+}
+export class IStakeClaimAllWithHashRequestDto {
+  @IsNotEmpty()
+  @ApiProperty()
+  user_address: string;
+  @IsNotEmpty()
+  @ApiProperty({ type: [IIindividualClaimWithHashRequestDto], isArray: true })
+  record: IIindividualClaimWithHashRequestDto[];
 }

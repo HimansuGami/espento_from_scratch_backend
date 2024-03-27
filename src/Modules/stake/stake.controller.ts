@@ -2,6 +2,7 @@ import { Body, Controller, Param, Post } from '@nestjs/common';
 import {
   IIindividualClaimRequestDto,
   IStakeClaimAllRequestDto,
+  IStakeClaimAllWithHashRequestDto,
   IStakeClaimRequestDto,
   IStakeRequestDto,
 } from './Interfaces/IStakeRequestDto';
@@ -39,11 +40,18 @@ export class StakeController {
   ): Promise<API_RESPONSE> {
     return await this._stakeService.stakeClaimAsync(user_address, amount, hash);
   }
-  @Post('stakeClaim')
+  @Post('stakeAllClaim')
   async stakeClaimAll(
     @Body()
     { user_address, record }: IStakeClaimAllRequestDto,
   ): Promise<API_RESPONSE> {
     return await this._stakeService.stakeClaimAllAsync(user_address, record);
+  }
+  @Post('stakeAllActualClaim')
+  async stakeClaimActual(
+    @Body()
+    { user_address, record }: IStakeClaimAllWithHashRequestDto,
+  ): Promise<API_RESPONSE> {
+    return await this._stakeService.stakeClaimActual(user_address, record);
   }
 }
