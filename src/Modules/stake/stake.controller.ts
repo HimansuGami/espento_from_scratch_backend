@@ -14,7 +14,7 @@ import { ApiTags } from '@nestjs/swagger';
 @ApiTags('Stake')
 export class StakeController {
   constructor(private readonly _stakeService: StakeService) {}
-  @Post('addStake/:user_address/:amount/:stake_apr/:stake_type/:time_tenure')
+  @Post('addStake')
   async addUser(
     @Body()
     {
@@ -33,7 +33,7 @@ export class StakeController {
       time_tenure,
     );
   }
-  @Post('stakeClaim/:user_address/:amount/:hash')
+  @Post('stakeClaim')
   async stakeClaim(
     @Body()
     { amount, user_address, hash }: IStakeClaimRequestDto,

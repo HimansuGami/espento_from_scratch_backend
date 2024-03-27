@@ -79,9 +79,11 @@ export class StakeService {
         ),
         time_tenured: time_tenure,
         per_second_apr: this.calculateAprPerSecond(stake_apr, time_tenure),
-        per_second_dollar_value:
-          this.calculateRewardAmount(amount, stake_apr, time_tenure) /
-          (time_tenure * 365 * 86400),
+        per_second_dollar_value: this.calculateDollarPerSecond(
+          amount,
+          stake_apr,
+          time_tenure,
+        ),
         starting_date: new Date(),
         ending_date: this.stakeCompletionDate(time_tenure),
       });
@@ -306,6 +308,19 @@ export class StakeService {
   calculateAprPerSecond(stake_apr: number, time_tenure: number) {
     const stake_apr_per_second = stake_apr / 365 / 86400;
     return stake_apr_per_second;
+  }
+  calculateDollarPerSecond(
+    amount: number,
+    stake_apr: number,
+    time_tenure: number,
+  ) {
+    const total_reward_amount = this.calculateRewardAmount(
+      amount,
+      stake_apr,
+      time_tenure,
+    );
+    const per_second_amount = total_reward_amount / (time_tenure * 365 * 86400);
+    return per_second_amount;
   }
 
   stakeCompletionDate(time_tenured: number) {
