@@ -15,7 +15,7 @@ import { ApiTags } from '@nestjs/swagger';
 export class StakeController {
   constructor(private readonly _stakeService: StakeService) {}
   @Post('addStake')
-  async addUser(
+  async addStake(
     @Body()
     {
       amount,
