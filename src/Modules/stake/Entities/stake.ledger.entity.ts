@@ -1,6 +1,6 @@
 import { isAddress } from 'ethers';
 import { Schema } from 'mongoose';
-import { IStakeLedger, STAKE_TYPE } from '../Interfaces/IStakeLedger';
+import { IStakeLedger } from '../Interfaces/IStakeLedger';
 
 export const StakeLedgerSchema = new Schema<IStakeLedger>(
   {
@@ -14,13 +14,18 @@ export const StakeLedgerSchema = new Schema<IStakeLedger>(
       ],
       index: true,
     },
-    txn_hash: { type: String, default: '0x' },
-    stake_type: { type: String, require: true, index: true },
-    stake_apr: { type: Number, require: true, index: true },
-    amount: { type: Number, required: true },
+    stake_type: { type: String, require: true },
+    hash: { type: String, require: true },
+    stake_apr: { type: Number, require: true },
+    amount: { type: Number, require: true },
+    total_expected_amount: { type: Number, require: true },
+    total_claimed_amount: { type: Number, require: true, default: 0 },
+    total_remaining_amount: { type: Number, require: true, default: 0 },
+    time_tenured: { type: Number, require: true },
     starting_date: { type: Date, required: true },
+    per_second_apr: { type: Number, default: 0 },
     ending_date: { type: Date, required: true },
-    time_tenure: { type: Number, required: true },
+    last_claimed_at: { type: Date },
   },
   { timestamps: true },
 );

@@ -1,5 +1,8 @@
 import { Body, Controller, Param, Post } from '@nestjs/common';
-import { IStakeRequestDto } from './Interfaces/IStakeRequestDto';
+import {
+  IStakeClaimRequestDto,
+  IStakeRequestDto,
+} from './Interfaces/IStakeRequestDto';
 import { API_RESPONSE } from 'src/Shared/Interfaces/Ishared.interface';
 import { StakeService } from './stake.service';
 import { ApiTags } from '@nestjs/swagger';
@@ -26,5 +29,12 @@ export class StakeController {
       stake_type,
       time_tenure,
     );
+  }
+  @Post('stakeClaim/:user_address/:amount/:hash')
+  async stakeClaim(
+    @Body()
+    { amount, user_address, hash }: IStakeClaimRequestDto,
+  ): Promise<API_RESPONSE> {
+    return await this._stakeService.stakeClaimAsync(user_address, amount, hash);
   }
 }

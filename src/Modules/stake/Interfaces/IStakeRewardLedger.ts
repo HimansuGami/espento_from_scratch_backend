@@ -12,14 +12,8 @@ export enum STAKE_APR {
 
 export class IStakeRewardLedger {
   user_address: string;
+  hash: string;
   stake_type: STAKE_TYPE;
   stake_apr: STAKE_APR;
   amount: number;
-  total_expected_amount: number;
-  total_claimed_amount: number;
-  time_tenured: number;
-  total_generated_amount: number;
-  per_second_apr: number;
-  starting_date: Date;
-  ending_date: Date;
 }

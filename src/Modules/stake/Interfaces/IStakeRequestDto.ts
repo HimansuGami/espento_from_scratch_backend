@@ -13,8 +13,19 @@ export class IStakeRequestDto {
   stake_apr: number;
   @IsNotEmpty()
   @ApiProperty()
-  stake_type: number;
+  stake_type: string;
   @IsNotEmpty()
   @ApiProperty()
   time_tenure: number;
+}
+export class IStakeClaimRequestDto {
+  @IsNotEmpty()
+  @ApiProperty()
+  user_address: string;
+  @IsNotEmpty()
+  @ApiProperty()
+  amount: number;
+  @IsNotEmpty()
+  @ApiProperty()
+  hash: string;
 }
