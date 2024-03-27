@@ -1,65 +1,88 @@
 import { Document, Types } from 'mongoose';
 export class LevelLogsDto {
-  from: string;
-  active: number;
-  total: number;
+  //from: string;
+  //active: number;
+  totalNodeVolume: number;
   fromLevel: number;
-  src: DIST_INCOME_ON_EVENTS_TYPE;
+  //src: DIST_INCOME_ON_EVENTS_TYPE;
+}
+
+export class ChildrenDto {
+  address: string;
+  childrenNumber: number;
+  parentAddress: string;
+  currentUserLevel: number;
+  childLevelFromParent: number;
+  calculatedDegignationVolume: number;
+  carryForwardDegignationVolume: number;
+}
+
+export enum DESIGNATION {
+  SILVER = 'silver',
+  GOLD = 'gold',
+  BRONZE = 'bronze',
+}
+export enum ACHIEVEDVOLUME {
+  SILVER = 25000,
+  GOLD = 50000,
+  BRONZE = 10000,
+}
+
+export class AllParentsDto {
+  address: string;
+  currentUserLevel: number;
+  levelFromCurrentChild: number;
 }
 export class IUser {
   address: string;
   isMemeber: boolean;
   ref: Types.ObjectId;
   refAddress: string;
-  childNumber: number; //added
-  parentLevel: number; //added
-  currentUserLevel: number; //added
   isUserBlocked: boolean; //added
   claimableAmountAfterUserBlocked: number; //added
+  currentuserLevel: number; //added
+  currentuserChildNumber: number = 0; //added
+  parentuserLevel: number; //added
+  children: ChildrenDto[]; //added
+  allParents: AllParentsDto[]; //added
   parent: Types.ObjectId;
   parentAddress: string;
   approvedClaimAmount: number;
-  /************************************** */
-  /**************NETWORK_DATA************ */
-  /************************************** */
-  nodeVolume: {
-    total: number;
-    liquidityAdded: number;
-    spentStake: number;
-    spentCollateral: number;
-  };
+  designation: DESIGNATION;
+  nodeVolume: number;
+  newVolume: number;
+  businessVolum: number;
   levelIncome: {
+    active: number;
+    activeLevels: number;
     totalClaimed: number;
     totalFlushed: number;
-    carryForward: number;
-    liquidityAdded: number;
-    spentStake: number;
-    spentCollateral: number;
     levelLogs: LevelLogsDto[];
     lastClaimedAt: typeof Date | undefined;
   };
-  directIncome: {
+  degignationIncome: {
     active: number;
     totalClaimed: number;
-    liquidityAdded: number;
-    spentStake: number;
-    spentCollateral: number;
     lastClaimedAt: typeof Date | undefined;
+    achievedVolume: number;
+  };
+  directIncome: {
+    totalMember: any;
+    active: number;
+    businessVolume: number;
+    totalClaimed: number;
+    lastClaimedAt: typeof Date | undefined;
+    activeMember: number;
   };
   capingLimit: {
     used: number;
     limit: number;
     remainingLimit: number;
-    src: DIST_INCOME_ON_EVENTS_TYPE | string;
   };
   investments: {
     total: number;
-    liquidityAdded: number;
-    spentStake: number;
-    spentCollateral: number;
-    limitUpdatedInvestmentAt: string;
     lastInvestedAt: string;
-    lastAmount: number;
+    lastInvestedAmount: number;
     src: string;
   };
   /************************************** */

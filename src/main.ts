@@ -20,6 +20,7 @@ async function bootstrap() {
   //other method to read .env file is below
   const configService = app.get(ConfigService);
   const port = configService.get<number>('PORT');
+  console.log('NEST APPLICATION: ' + port);
   await app.listen(port);
 }
 bootstrap();
